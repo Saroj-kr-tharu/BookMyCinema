@@ -19,6 +19,7 @@ pipeline{
                 
 
                 withCredentials( [
+                    
                     file(credentialsId: 'remainder-env-book-my-cinema', variable: 'REMAINDER_ENV'),
                     file(credentialsId: 'payment-env-book-my-cinema', variable: 'PAYMENT_ENV'),
                     file(credentialsId: 'mysql-env-book-my-cinema', variable: 'MYSQL_ENV'),

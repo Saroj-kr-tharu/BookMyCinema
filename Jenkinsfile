@@ -20,15 +20,14 @@ pipeline{
                 
 
                 withCredentials( [
-
                     file(credentialsId: 'remainder-env-book-my-cinema', variable: 'REMAINDER_ENV'),
                     file(credentialsId: 'payment-env-book-my-cinema', variable: 'PAYMENT_ENV'),
                     file(credentialsId: 'mysql-env-book-my-cinema', variable: 'MYSQL_ENV'),
                     file(credentialsId: 'movie_booking-env-book-my-cinema', variable: 'BOOKING_ENV'),
                     file(credentialsId: 'mongodb-env-book-my-cinema', variable: 'MONGO_ENV'),
-                    file(credentialsId: 'fortend-env-book-my-cinema', variable: 'FORTEND_ENV')
-                    file(credentialsId: 'auth-env-book-my-cinema', variable: 'AUTH_ENV')
-                    file(credentialsId: 'api-gateway-env-book-my-cinema', variable: 'APIGATEWAY_ENV')
+                    file(credentialsId: 'fortend-env-book-my-cinema', variable: 'FORTEND_ENV'),
+                    file(credentialsId: 'auth-env-book-my-cinema', variable: 'AUTH_ENV'),
+                    file(credentialsId: 'api-gateway-env-book-my-cinema', variable: 'APIGATEWAY_ENV'),
                     file(credentialsId: 'global-env-book-my-cinema', variable: 'GLBAL_ENV')
                 ] ){
                     sh '''

@@ -2,8 +2,9 @@ pipeline{
     agent {label "dev" }
 
     stages{
-        stage("Clone Code"){ steps{
-            git url : "https://github.com/Saroj-kr-tharu/BookMyCinema.git", branch :"main"
+        stage("Clone Code"){
+            steps{
+            git url : "https://github.com/Saroj-kr-tharu/BookMyCinema", branch :"main"
 
             
          } }
@@ -19,7 +20,7 @@ pipeline{
                 
 
                 withCredentials( [
-                    
+
                     file(credentialsId: 'remainder-env-book-my-cinema', variable: 'REMAINDER_ENV'),
                     file(credentialsId: 'payment-env-book-my-cinema', variable: 'PAYMENT_ENV'),
                     file(credentialsId: 'mysql-env-book-my-cinema', variable: 'MYSQL_ENV'),

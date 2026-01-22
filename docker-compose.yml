@@ -1,0 +1,199 @@
+networks:
+  MovieBooking_micro_net:
+    name: MovieBooking_micro_net
+    driver: bridge
+
+volumes:
+  apigateway_microservice_vol:
+  payment_backend_microservice_vol:
+  remainder_microservice_vol:
+  auth_microservice_vol:
+  movie_booking_backend_microservice_vol:
+  rabbitmq_server_vol:
+  mysql_data_vol:
+  mongodb_data_vol:
+  fortend_data_vol:
+
+services:
+  # MySQL Database
+  mysql_service:
+    image: mysql:8.0
+    container_name: mysql_db
+    networks:
+      - MovieBooking_micro_net
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data_vol:/var/lib/mysql
+    env_file:
+      - environment/.env.mysql
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p12345"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # MongoDB Database
+  mongodb_service:
+    image: mongo:latest
+    container_name: mongodb_server
+    networks:
+      - MovieBooking_micro_net 
+    ports:
+      - "2710:27017"
+    volumes:
+      - mongodb_data_vol:/data/db
+    env_file:
+      - environment/.env.mongodb
+    restart: always
+    healthcheck:
+      test: echo 'db.runCommand({ping:1}).ok' | mongosh --port 27017 --quiet
+      interval: 20s # Increased interval to reduce log spam
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # RabbitMQ Message Broker
+  rabbitmq_service:
+    image: "rabbitmq:3-management"
+    container_name: rabbitmq_server
+    networks:
+      - MovieBooking_micro_net
+    ports:
+      - "5674:5672" # Changed from 5673 to 5674 to avoid Windows Port Reservation conflict
+      - "15672:15672" 
+    volumes:
+      - rabbitmq_server_vol:/var/lib/rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Payment Microservice
+  payment_service:
+    image: sarojdockerworkspace/payment_backend_service:latest
+    container_name: payment_service
+    build: ./05_Payment_microservice
+    networks:
+      - MovieBooking_micro_net
+    ports:
+      - "3009:3009"
+    volumes:
+      - ./05_Payment_microservice:/movie_booking_app/developer/backend/paymentservice
+      - payment_backend_microservice_vol:/movie_booking_app/developer/backend/paymentservice/node_modules
+    env_file:
+      - environment/.env
+      - environment/.env.payment
+    depends_on:
+      mysql_service:
+        condition: service_healthy
+      rabbitmq_service:
+        condition: service_healthy
+    command: >
+      sh -c "npm install && cd src && npx sequelize-cli db:create --env development && npx sequelize-cli db:migrate --env development && npm start"
+
+  # API Gateway
+  api_gateway_service:
+    image: sarojdockerworkspace/api_gateway_service:latest
+    container_name: api_gateway_service
+    build: ./01_ApiGateway
+    networks:
+      - MovieBooking_micro_net
+    ports:
+      - "3000:3000"
+    env_file:
+      - - environment/.env
+      - environment/.env.api_gateway
+    volumes:
+      - ./01_ApiGateway:/movie_booking/apigateway
+      - apigateway_microservice_vol:/movie_booking/apigateway/node_modules
+ 
+  # Auth Microservice
+  auth_service:
+    image: sarojdockerworkspace/auth_backend_service:latest
+    container_name: auth_service
+    build: ./02_AuthMicroService
+    networks:
+      - MovieBooking_micro_net
+    ports:
+      - "3003:3003"
+    env_file:
+      - environment/.env
+      - environment/.env.auth
+    volumes:  
+      - ./02_AuthMicroService:/movie_booking_app/developer/backend/auth_microservice
+      - auth_microservice_vol:/movie_booking_app/developer/backend/auth_microservice/node_modules
+    depends_on:
+      mysql_service:
+        condition: service_healthy
+    command: >
+      sh -c "npm install && cd src && npx sequelize-cli db:create --env development && npx sequelize-cli db:migrate --env development && npm start"
+
+  # Reminder Microservice
+  remainder_service:
+    image: sarojdockerworkspace/remainder_backend_service:latest
+    container_name: remainder_service
+    build:
+      context: ./03_RemainderMicroService
+      dockerfile: Dockerfile
+    networks:
+      - MovieBooking_micro_net
+    ports:
+      - "3004:3004"
+    volumes:
+      - ./03_RemainderMicroService:/movie_booking_app/developer/backend/remainder_microservice
+      - remainder_microservice_vol:/movie_booking_app/developer/backend/remainder_microservice/node_modules
+    env_file:
+      - environment/.env
+      - environment/.env.remainder
+    depends_on:
+      rabbitmq_service:
+        condition: service_healthy
+      mysql_service:
+        condition: service_healthy
+    command: >
+      sh -c "npm install && cd src && npx sequelize-cli db:create --env development && npx sequelize-cli db:migrate --env development && npm start"
+  
+  # Movie Booking Microservice
+  movie_booking_service:
+    image: sarojdockerworkspace/movie_booking_backend_service:latest
+    container_name: movie_booking_service
+    build: ./04_MovieBookingService
+    networks:
+    - MovieBooking_micro_net
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./04_MovieBookingService:/movie_booking_app/developer/backend_nodejs/moviebooking_microservice
+      - movie_booking_backend_microservice_vol:/movie_booking_app/developer/backend_nodejs/moviebooking_microservice/node_modules
+    env_file:
+      - environment/.env
+      - environment/.env.movie_booking
+    depends_on:
+      mongodb_service:
+        condition: service_healthy
+    command: >
+      sh -c "npm install && npm start"
+
+  # Frontend Service
+  fortend_service: 
+    image: sarojdockerworkspace/fotend_service:latest
+    container_name: fortend_service
+    build: ./06_Fortend
+    networks:
+      - MovieBooking_micro_net
+    ports:
+      - "8000:5173"
+    volumes:
+      - ./06_Fortend:/movie_booking/fortend
+      - fortend_data_vol:/movie_booking/fortend/node_modules
+    env_file:
+      - environment/.env.fortend
+    command: >
+      sh -c "npm install && npm run dev"

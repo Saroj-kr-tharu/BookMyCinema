@@ -1,0 +1,10 @@
+05_Payment_microservice/.env
+03_RemainderMicroService/.env
+04_MovieBookingService/.env
+02_AuthMicroService/.env
+06_Fortend/.env
+02_AuthMicroService/.env
+
+.env.*
+
+environment

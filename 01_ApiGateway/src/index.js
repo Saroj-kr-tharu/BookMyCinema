@@ -19,11 +19,10 @@ app.use(limiter);
 
 
 
-
 app.use(
   cors({
     origin: function (origin, callback) {
-      const allowedOrigins = ['http://localhost:5173', 'https://online-movie-booking-fortend.vercel.app'];
+      const allowedOrigins = [FORTEND_URL ];
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -87,7 +86,7 @@ app.get('/', (req, res) => {
   });
 });
 
-
+ 
 const auth_midle_proxy = createProxyMiddleware({
   target: AUTH_BACKEND_URL,
   changeOrigin: true,

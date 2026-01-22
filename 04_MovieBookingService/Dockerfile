@@ -1,7 +1,7 @@
 FROM node:20-alpine
 # from the base image node 
 
-WORKDIR /movie_booking_app/developer/backend/moviebookingservice
+WORKDIR /movie_booking/movie_booking_service
 # working directory define 
 
 

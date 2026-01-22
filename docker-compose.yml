@@ -42,7 +42,7 @@ services:
     networks:
       - MovieBooking_micro_net 
     ports:
-      - "2710:27017"
+      - "27020:27017"
     volumes:
       - mongodb_data_vol:/data/db
     env_file:
@@ -50,7 +50,7 @@ services:
     restart: always
     healthcheck:
       test: echo 'db.runCommand({ping:1}).ok' | mongosh --port 27017 --quiet
-      interval: 20s # Increased interval to reduce log spam
+      interval: 20s 
       timeout: 5s
       retries: 5
       start_period: 30s
@@ -62,7 +62,7 @@ services:
     networks:
       - MovieBooking_micro_net
     ports:
-      - "5674:5672" # Changed from 5673 to 5674 to avoid Windows Port Reservation conflict
+      - "5674:5672" 
       - "15672:15672" 
     volumes:
       - rabbitmq_server_vol:/var/lib/rabbitmq
@@ -79,7 +79,9 @@ services:
   payment_service:
     image: sarojdockerworkspace/payment_backend_service:latest
     container_name: payment_service
-    build: ./05_Payment_microservice
+    build: 
+      context: ./05_Payment_microservice
+      dockerfile: Dockerfile
     networks:
       - MovieBooking_micro_net
     ports:
@@ -106,13 +108,17 @@ services:
     networks:
       - MovieBooking_micro_net
     ports:
-      - "3000:3000"
+      - "3000:3001"
     env_file:
-      - - environment/.env
+      - environment/.env
       - environment/.env.api_gateway
     volumes:
       - ./01_ApiGateway:/movie_booking/apigateway
       - apigateway_microservice_vol:/movie_booking/apigateway/node_modules
+    command: >
+      sh -c "
+      npm install && 
+      npm start"
  
   # Auth Microservice
   auth_service:
@@ -127,13 +133,17 @@ services:
       - environment/.env
       - environment/.env.auth
     volumes:  
-      - ./02_AuthMicroService:/movie_booking_app/developer/backend/auth_microservice
-      - auth_microservice_vol:/movie_booking_app/developer/backend/auth_microservice/node_modules
+      - ./02_AuthMicroService:/movie_booking/auth_service
+      - auth_microservice_vol:/movie_booking/auth_service/node_modules
     depends_on:
       mysql_service:
         condition: service_healthy
     command: >
-      sh -c "npm install && cd src && npx sequelize-cli db:create --env development && npx sequelize-cli db:migrate --env development && npm start"
+      sh -c "
+      npm install && 
+      cd src && npx sequelize-cli db:create --env development && 
+      npx sequelize-cli db:migrate --env development &&
+      npm start"
 
   # Reminder Microservice
   remainder_service:
@@ -147,8 +157,8 @@ services:
     ports:
       - "3004:3004"
     volumes:
-      - ./03_RemainderMicroService:/movie_booking_app/developer/backend/remainder_microservice
-      - remainder_microservice_vol:/movie_booking_app/developer/backend/remainder_microservice/node_modules
+      - ./03_RemainderMicroService:/movie_booking/remainder_service
+      - remainder_microservice_vol:/movie_booking/remainder_service/node_modules
     env_file:
       - environment/.env
       - environment/.env.remainder
@@ -158,20 +168,27 @@ services:
       mysql_service:
         condition: service_healthy
     command: >
-      sh -c "npm install && cd src && npx sequelize-cli db:create --env development && npx sequelize-cli db:migrate --env development && npm start"
+      sh -c "
+      npm install && 
+      cd src && 
+      npx sequelize-cli db:create --env development &&
+      npx sequelize-cli db:migrate --env development &&
+      npm start "
   
   # Movie Booking Microservice
   movie_booking_service:
     image: sarojdockerworkspace/movie_booking_backend_service:latest
     container_name: movie_booking_service
-    build: ./04_MovieBookingService
+    build: 
+      context: ./04_MovieBookingService
+      dockerfile: Dockerfile
     networks:
     - MovieBooking_micro_net
     ports:
       - "3002:3002"
     volumes:
-      - ./04_MovieBookingService:/movie_booking_app/developer/backend_nodejs/moviebooking_microservice
-      - movie_booking_backend_microservice_vol:/movie_booking_app/developer/backend_nodejs/moviebooking_microservice/node_modules
+      - ./04_MovieBookingService:/movie_booking/movie_booking_service
+      - movie_booking_backend_microservice_vol:/movie_booking/movie_booking_service/node_modules
     env_file:
       - environment/.env
       - environment/.env.movie_booking
@@ -185,9 +202,10 @@ services:
   fortend_service: 
     image: sarojdockerworkspace/fotend_service:latest
     container_name: fortend_service
-    build: ./06_Fortend
-    networks:
-      - MovieBooking_micro_net
+    build: 
+      context: ./06_Fortend
+      dockerfile: Dockerfile
+
     ports:
       - "8000:5173"
     volumes:
@@ -196,4 +214,4 @@ services:
     env_file:
       - environment/.env.fortend
     command: >
-      sh -c "npm install && npm run dev"
+      sh -c "npm install && npm run dev -- --host"

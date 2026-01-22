@@ -1,7 +1,7 @@
 FROM node:20-alpine
 # from the base image node 
 
-WORKDIR /movie_booking_app/developer/backend/remainder_microservice
+WORKDIR /movie_booking/remainder_service
 # working directory define 
 
 COPY package*.json ./

@@ -1,0 +1,61 @@
+
+stages: 
+  - build 
+  - test 
+  - push 
+  - deploy 
+
+.inject_env_template: &inject_env
+  - echo "Injecting environment files"
+  - rm -rf environment
+  - mkdir -p environment  
+
+  - cp $ENV environment/.env
+  - cp $API_GATEWAY_ENV environment/.env.api_gateway
+  - cp $AUTH_ENV environment/.env.auth
+  - cp $MONGO_ENV environment/.env.mongodb
+  - cp $MOVIE_BOOKING_ENV environment/.env.movie_booking
+  - cp $PAYMENT_ENV environment/.env.payment
+  - cp $REMAINDER_ENV environment/.env.remainder
+  - cp $MYSQL_ENV environment/.env.mysql
+  - cp $FRONTEND_ENV environment/.env.fortend
+
+build_job:
+  stage: build
+  script: 
+    - *inject_env
+    - echo " building the project"
+    - docker compose build 
+  tags: 
+    - dev 
+
+test_job: 
+  stage: test
+  script: 
+    - echo " Testing done "
+  tags:
+    - dev 
+
+push_job:
+  stage: push
+  script: 
+    - *inject_env
+    - echo "Pushing Images to docker hub  "
+    - docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASS
+    - docker compose push
+    - echo " Images Pushes DockerHub "
+  tags: 
+    - dev 
+
+deploy_job:
+  stage: deploy 
+  script: 
+    - *inject_env
+    - echo " deploying docker compose up  "
+    - docker compose down 
+    - docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASS
+    - docker compose pull 
+    - docker compose up -d 
+    - echo " Deployment Completed  "
+  tags:
+    - dev 
